@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentspace.pro.mapper.BoardReplyMapper">
+
+	<!-- 특정 게시물에 대한 댓글 목록 조회 -->
+	
+<!--   	<select id="selectBoardReplyList"
+		resultType="com.rentspace.pro.domain.BoardReplyVO">
+<![CDATA[
+SELECT freeboard_no, reply_no, reply_content, reply_writer, reply_register_date, frno, LEVEL AS lvl
+FROM ( SELECT /*+ INDEX_ASC (a IDX_REPLY_FNO_RNO) */ *
+FROM space.reply
+WHERE freeboard_no = #{freeboard_no} ) a
+START WITH frno IS NULL
+CONNECT BY PRIOR reply_no = frno
+]]>
+	</select>  --> 
+
+	<!-- 댓글 목록 - 계층 쿼리 (페이징) -->
+ 	<select id="selectBoardReplyList"
+		resultType="com.rentspace.pro.domain.BoardReplyVO">
+<![CDATA[
+SELECT freeboard_no, reply_no, reply_content, reply_writer, reply_register_date, frno, lvl
+FROM ( SELECT ROWNUM rn, b.*
+FROM ( SELECT LEVEL lvl, a.*
+FROM ( SELECT /*+ INDEX_ASC (a IDX_REPLY_FNO_RNO) */ *
+FROM space.reply
+WHERE freeboard_no = #{boardReplyPagingDTO.freeboard_no}
+) a
+START WITH frno IS NULL
+CONNECT BY PRIOR frno = frno
+) b
+)
+WHERE rn BETWEEN #{boardReplyPagingDTO.pageNum} * #{boardReplyPagingDTO.rowAmountPerPage}
+- (#{boardReplyPagingDTO.rowAmountPerPage} - 1)
+AND #{boardReplyPagingDTO.pageNum} * #{boardReplyPagingDTO.rowAmountPerPage}
+]]>
+	</select> 
+
+ <!-- 특정 게시물의 댓글 총 개수 확인 -->
+	 <select id="selectReplyTotalByFreeboard_no" resultType="int">
+	 <![CDATA[
+	 	SELECT /*+ INDEX (REPLY IDX_REPLY_FNO_RNO) */ count(*)
+	 	FROM space.reply
+	 	WHERE freeboard_no = #{boardReplyPagingDTO.freeboard_no}
+	 ]]>
+	 </select>
+
+
+	<!-- 특정 게시물에 대한 댓글 등록 -->
+	<insert id="insertBoardReplyForBoard">
+		<selectKey keyProperty="reply_no" order="BEFORE"
+			resultType="long">
+			SELECT space.seq_reply.NEXTVAL FROM dual
+		</selectKey>
+		INSERT INTO space.reply(freeboard_no, reply_no, reply_content,
+		reply_writer, reply_register_date, frno)
+		VALUES (#{freeboard_no},
+		#{reply_no}, #{reply_content}, #{reply_writer}, DEFAULT, DEFAULT)
+	</insert>
+
+
+
+	<!-- 특정 게시물에 대한 특정 댓글 조회 -->
+	<select id="selectBoardReply"
+		resultType="com.rentspace.pro.domain.BoardReplyVO">
+<![CDATA[
+SELECT * FROM space.reply WHERE freeboard_no= #{freeboard_no} AND reply_no = #{reply_no}
+]]>
+	</select>
+
+	<!-- 특정 게시물에 대한 특정 댓글 수정 -->
+	<update id="updateBoardReply">
+<![CDATA[
+UPDATE space.reply
+SET reply_content = #{reply_content},
+reply_register_date = DEFAULT
+WHERE freeboard_no= #{freeboard_no} AND reply_no = #{reply_no}
+]]>
+	</update>
+
+	<!-- 특정 게시물에 대한 특정 댓글 삭제 -->
+	<delete id="deleteBoardReply">
+<![CDATA[
+DELETE FROM space.reply WHERE freeboard_no= #{freeboard_no} AND reply_no = #{reply_no}
+]]>
+	</delete>
+
+</mapper>

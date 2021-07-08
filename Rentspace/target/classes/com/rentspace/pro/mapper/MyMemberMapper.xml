@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTO Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.rentspace.pro.mapper.MyMemberMapper"> <!-- 패키지 명이 포함된 인터페이스 이름을 설정 -->
+
+	<resultMap id="authorityMap" type="com.rentspace.pro.domain.MyAuthorityVO">
+		<result property="member_id" column="member_id"/>
+		<result property="authority" column="authority"/>
+	</resultMap>
+
+	<resultMap id="memberMap" type="com.rentspace.pro.domain.MyMemberVO">
+		<result property="member_id" column="member_id"/>
+		<result property="member_pw" column="member_pw"/>
+		<result property="member_nick" column="member_nick"/>
+		<result property="member_email" column="member_email"/>
+		<result property="member_phone" column="member_phone"/>
+		<result property="sms_agree" column="sms_agree"/>
+		<result property="email_agree" column="email_agree"/>
+		<result property="member_profile_image" column="member_profile_image"/>
+		<result property="member_level" column="member_level"/>
+		<result property="member_join_date" column="member_join_date"/>
+		<result property="member_drop_flag" column="member_drop_flag"/>
+		<result property="member_enabled" column="member_enabled"/>
+		
+		<!-- property: MyMemberVO의 속성명, 
+			resultMap: 반환되는 레코드가 저장될 결과물의 이름 -->
+		<collection property="authorityList" resultMap="authorityMap"/> 
+	</resultMap>
+
+	<resultMap id="reservationMap" type="com.rentspace.pro.domain.ReservationVO">
+		<result property="reservation_member_id" column="reservation_member_id"/>
+		<result property="reservation_product_no" column="reservation_product_no"/>
+		<result property="reservation_product_name" column="reservation_product_name"/>
+		<result property="reservation_booking_date" column="reservation_booking_date"/>
+		<result property="reservation_no" column="reservation_no"/>
+
+	</resultMap>
+	
+	<!-- 특정 회원 조회(스프링 시큐리티도 사용함) - OUTER JOIN 을 사용할 이유가 없습니다. -->
+	<select id="selectMyMember" resultMap="memberMap">
+	<![CDATA[
+		SELECT mem.member_id, mem.member_pw, mem.member_nick, mem.member_email, mem.member_phone,
+			mem.sms_agree, mem.email_agree, mem.member_profile_image, mem.member_level,
+			mem.member_join_date, mem.member_drop_flag, mem.member_enabled, auth.authority
+		FROM space.member mem
+				INNER JOIN space.member_authority auth
+					ON mem.member_id = auth.member_id
+		WHERE mem.member_id=#{member_id}
+	]]>
+	</select>
+	
+	<!-- 아이디 중복 체크 -->
+	<select id="idCheck" resultType="int">
+		SELECT COUNT(*) FROM space.member WHERE member_id=#{member_id}
+	</select>
+	
+	<!-- 닉네임 중복 체크 -->
+	<select id="nickCheck" resultType="int">
+		SELECT COUNT(*) FROM space.member WHERE member_nick=#{member_nick}
+	</select>
+	
+	<!-- 회원 등록: 회원 등록 시 회원 권한 추가도 같이 수행 -->
+	<insert id="insertMyMember">
+		INSERT INTO space.member
+		VALUES(#{member_id}, #{member_pw}, #{member_nick}, #{member_email}, #{member_phone},
+				#{email_agree}, #{sms_agree}, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT)
+	</insert>
+	
+	<!-- 회원 권한 추가 -->
+	<insert id="insertMyMemAuthority">
+		INSERT INTO space.member_authority
+		VALUES(#{member_id}, #{authority})
+	</insert>
+	
+	<!-- 회원 정보 수정 -->
+	<update id="updateMember">
+		UPDATE SPACE.member
+		SET member_pw=#{member_pw},
+			member_nick=#{member_nick},
+			member_email=#{member_email},
+			member_phone=#{member_phone},
+			sms_agree=#{sms_agree},
+			email_agree=#{email_agree}
+		WHERE member_id=#{member_id}
+	</update>
+	
+	<!-- 회원 탈퇴 -->
+	<update id="uapdateMemberDropFlag">
+		UPDATE SPACE.member
+		SET member_drop_flag=#{member_drop_flag}			
+		WHERE member_id=#{member_id}
+	</update>
+	
+	<!-- 예약내역 확인 --> 
+	<!-- <select id="selectReservationList" resultType="reservationMap">
+	<![CDATA[
+		SELECT res.*, prod.product_address, prod.host_email, prod.host_phone
+		FROM reservation res
+		INNER JOIN product prod 
+		ON res.reservation_product_no = prod.product_no
+		WHERE res.reservation_member_id = #{member_id}
+	]]>
+	</select> -->
+	<select id="selectReservationList" resultType="com.rentspace.pro.domain.ReservationVO">
+	SELECT *
+	FROM reservation
+	WHERE reservation_member_id = #{member_id}
+	</select>
+	
+<!-- 	공간 등록내역 확인 -->
+	<select id="selectProductList" resultType="com.rentspace.pro.domain.ProductVO">
+		SELECT *
+		FROM SPACE.product
+		WHERE product.product_member_id = #{member_id}
+	</select> 
+	
+	<!-- 공간 하나  -->
+	<select id="selectProductOne" resultType="com.rentspace.pro.domain.ProductVO">
+		SELECT *
+		FROM SPACE.product
+		WHERE product_no = #{product_no}
+	</select>
+</mapper>

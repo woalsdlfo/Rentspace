@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="com.rentspace.pro.mapper.ProductMapper">
+
+
+<select id="selectProduct" resultType="com.rentspace.pro.domain.ProductVO">
+
+SELECT * from product
+
+
+</select>
+
+
+<select id="selectProductDetail" resultType="com.rentspace.pro.domain.ProductVO">
+
+SELECT * from product where product_no=#{product_no}
+
+
+</select>
+
+
+
+   <!-- 게시물 등록1 - selectKey 이용않함 -->
+   <insert id="insertProduct">
+      INSERT INTO space.producttest
+      VALUE
+      (seq_freeboard.nextval, #{product_content})
+   </insert>
+
+
+   <!-- 게시물 등록2 - selectKey 이용 -->
+   <insert id="insertProductSelectKey">
+      <selectKey keyProperty="product_no" order="BEFORE"
+         resultType="int">
+         SELECT space.seq_product.nextval FROM dual
+      </selectKey>
+INSERT INTO space.PRODUCT (  
+                    product_no,
+                  product_main_img,
+                    product_sub_img1,
+                    product_sub_img2,
+                    product_address,
+                    product_content,
+                    product_caution,
+                    product_refund,
+                       product_type,
+                    product_homepage,
+                       product_size,
+                       product_hours,
+                       host_email,
+                       host_phone,
+                    product_member_id,
+                 product_name,
+                 product_price,
+                 product_reg_Date) 
+                 
+                 VALUES(
+                 space.seq_product.nextval,
+                 #{product_main_img},
+                 null,
+                 null,
+                 #{product_address},
+                 #{product_content},
+                 #{product_caution},
+                 #{product_refund},
+                 #{product_type},
+                 #{product_homepage},
+                 #{product_size},
+                 #{product_hours},
+                 null,
+                 null,
+                 'test',
+                 #{product_name},
+                 #{product_price},
+                  DEFAULT)
+   </insert>
+
+
+</mapper>
+
+   

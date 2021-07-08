@@ -1,0 +1,206 @@
+
+
+member---------------------------------------------------------------------------
+
+create table space.member(
+member_id varchar2(50) primary key,
+member_pw varchar2(100),
+member_nick varchar2(100),
+member_email varchar2(100),
+member_phone varchar2(50),
+sms_agree number(1) DEFAULT 0, --0비동의 1동의
+email_agree number(1) DEFAULT 0, --0비동의 1동의
+member_profile_image varchar2(4000) DEFAULT '0',
+member_level number(1) DEFAULT '0',
+member_join_date date DEFAULT sysdate,
+member_drop_flag CHAR(1) DEFAULT '0',  -- '1'탈퇴, '0'유지
+member_enabled CHAR(1) DEFAULT '1' --스프링 시큐리티에서 사용, '0'비활성(FALSE), '1'활성(TRUE), 계정 잠김 기준 데이터로도 활용 가능
+)tablespace users;
+
+CREATE TABLE space.member_authority (
+member_id VARCHAR(50) NOT NULL,
+authority VARCHAR(50) NOT NULL,
+CONSTRAINT pk_member_authority PRIMARY KEY (member_id, authority),
+CONSTRAINT fk_member_authority FOREIGN KEY (member_id)
+  REFERENCES space.member(member_id) ON DELETE CASCADE
+)TABLESPACE users;
+
+
+CREATE TABLE SPACE.persistent_logins(
+username VARCHAR2(64) NOT NULL,
+series VARCHAR(64) PRIMARY KEY,
+token VARCHAR2(64) NOT NULL,
+last_used TIMESTAMP(0) NOT NULL
+)TABLESPACE users;
+
+
+
+
+
+
+freeboard------------------------------------------------------------------------------------------------------------------------------------------
+
+
+--<시퀀스 생성>
+CREATE SEQUENCE space.seq_freeboard;
+
+--<테이블 생성>
+CREATE TABLE space.freeboard (
+freeboard_no NUMBER(10,0),
+freeboard_title VARCHAR2(200) NOT NULL,
+freeboard_content VARCHAR2(2000) NOT NULL,
+freeboard_member_id VARCHAR2(30) NOT NULL,
+freeboard_register_date DATE DEFAULT sysdate,
+freeboard_views_count NUMBER(10) DEFAULT 0,
+freeboard_reply_count NUMBER(10) DEFAULT 0,
+freeboard_del_flag NUMBER(1) DEFAULT 0 --1: 삭제요청됨(Y), 0.유지(N)
+) TABLESPACE users;
+
+--<기본키 생성>
+ALTER TABLE space.freeboard
+ADD CONSTRAINT pk_freeboard PRIMARY KEY (freeboard_no);
+
+--<더미 데이터 삽입1>
+INSERT INTO space.freeboard
+VALUES (space.seq_freeboard.nextval,
+'테스트제목'||space.seq_freeboard.currval ,
+'테스트내용'||space.seq_freeboard.currval,
+'user'||space.seq_freeboard.currval,
+DEFAULT, DEFAULT, DEFAULT, DEFAULT); --10회 수행
+
+COMMIT ;
+
+--<더미 데이터 삽입2>
+INSERT INTO space.freeboard (freeboard_no, freeboard_title, freeboard_content, freeboard_member_id)
+SELECT space.seq_freeboard.nextval, freeboard_title, freeboard_content, freeboard_member_id
+FROM space.freeboard ; -- 스크립트 출력창에 (10만 이상) 개 행 이 삽입되었다는 메시지가 표시될 때까지 반복 실행(실제 행수는 20만개 이상)
+--문서 실습에서는 22만개 입력 메시지가 표시될 때까지 수행했습니다.
+
+COMMIT ; -- 실제 행수는 (10만 이상 * 2)의 행이 테이블에 저장되어 있게 됩니다. 문서에서는 약45만개의 행이 저장되었습니다.
+
+--<데이터 확인>
+SELECT * FROM space.freeboard ORDER BY freeboard_no DESC;
+
+
+
+
+
+
+
+
+notice---------------------------------------------------------------------------
+
+
+--<시퀀스 생성>
+CREATE SEQUENCE space.seq_notice;
+
+--<테이블 생성>
+CREATE TABLE space.notice (
+notice_no NUMBER(10,0),
+notice_title VARCHAR2(200) NOT NULL,
+notice_content VARCHAR2(2000) NOT NULL,
+notice_member_id VARCHAR2(30) NOT NULL,
+notice_register_date DATE DEFAULT sysdate,
+notice_views_count NUMBER(10) DEFAULT 0,
+notice_reply_count NUMBER(10) DEFAULT 0,
+notice_del_flag NUMBER(1) DEFAULT 0 --1: 삭제요청됨(Y), 0.유지(N)
+) TABLESPACE users;
+
+--<기본키 생성>
+ALTER TABLE space.notice
+ADD CONSTRAINT pk_notice PRIMARY KEY (notice_no);
+
+--<더미 데이터 삽입1>
+INSERT INTO space.notice
+VALUES (space.seq_notice.nextval,
+'테스트제목'||space.seq_notice.currval ,
+'테스트내용'||space.seq_notice.currval,
+'user'||space.seq_notice.currval,
+DEFAULT, DEFAULT, DEFAULT, DEFAULT); --10회 수행
+
+COMMIT ;
+
+--<더미 데이터 삽입2>
+INSERT INTO space.notice (notice_no, notice_title, notice_content, notice_member_id)
+SELECT space.seq_notice.nextval, notice_title, notice_content, notice_member_id
+FROM space.notice ; -- 스크립트 출력창에 (10만 이상) 개 행 이 삽입되었다는 메시지가 표시될 때까지 반복 실행(실제 행수는 20만개 이상)
+--문서 실습에서는 22만개 입력 메시지가 표시될 때까지 수행했습니다.
+
+COMMIT ; -- 실제 행수는 (10만 이상 * 2)의 행이 테이블에 저장되어 있게 됩니다. 문서에서는 약45만개의 행이 저장되었습니다.
+
+--<데이터 확인>
+SELECT * FROM space.notice ORDER BY notice_no DESC;
+
+
+
+
+
+reply----------------------------------------------------------------------------------------------------------------------------------------------------
+
+--테이블 생성
+CREATE TABLE space.reply (
+reply_freeboard_no NUMBER(10) NOT NULL,
+reply_no NUMBER(10),
+reply_content VARCHAR2(2000) NOT NULL,
+reply_writer VARCHAR2(50) NOT NULL,
+reply_register_date DATE DEFAULT sysdate,
+frno NUMBER(10) --댓글(부모키)의 댓글 처리를 위한 부모키
+) TABLESPACE users;
+
+--기본키 제약조건이 사용할 인덱스 생성
+CREATE INDEX space.idx_reply_fno_rno ON space.reply(reply_freeboard_no, reply_no);
+
+ALTER TABLE reply
+ADD PRIMARY KEY (reply_no);
+
+ALTER TABLE space.reply
+ADD CONSTRAINT reply PRIMARY KEY (reply_freeboard_no, reply_no)
+USING INDEX space.idx_reply_fno_rno;
+
+
+--시퀀스 생성
+CREATE SEQUENCE space.seq_reply START WITH 1;
+
+--테스트 데이터 입력
+--1) 부모글 확인: 결과의 첫번째 행의 bno 값 확인
+SELECT freeboard_no, freeboard_title, freeboard_content, freeboard_member_id, freeboard_register_date, freeboard_views_count, freeboard_del_flag
+FROM space.tbl_freeboard ORDER BY freeboard_no DESC; --229377
+
+--2) 아래의 INSERT 문을 5 번 실행
+INSERT INTO space.reply(reply_freeboard_no, reply_no, reply_content, reply_writer, reply_register_date,frno)
+VALUES (524301, space.seq_reply.NEXTVAL,'524301 의 댓글'||space.seq_reply.CURRVAL,
+'user'||space.seq_reply.CURRVAL, DEFAULT, DEFAULT);
+COMMIT ;
+
+INSERT INTO space.reply(reply_freeboard_no, reply_no, reply_content, reply_writer, reply_register_date, frno)
+VALUES (524301, space.seq_reply.NEXTVAL, '524301 의 댓글 1 의 댓글 6','test02', DEFAULT, 5);
+
+
+--입력된 데이터 확인
+SELECT * FROM space.reply ORDER BY reply_freeboard_no, reply_no ;
+
+
+create table space.product(
+product_main_img varchar2(4000),
+product_sub_img1 varchar2(4000),
+product_sub_img2 varchar2(4000),
+product_address varchar2(100),
+product_content varchar2(2000),
+product_caution varchar2(2000),
+product_refund varchar2(2000),
+product_type varchar2(50),
+product_homepage varchar2(100),
+product_size varchar2(50),
+product_hours varchar2(50),
+host_email varchar2(50),
+host_phone varchar2(30),
+product_member_id varchar2(50),
+product_name varchar2(100),
+product_no number(10) primary key,
+product_price varchar2(50),
+product_reg_date date default sysdate
+)tablespace users;
+
+
+
+

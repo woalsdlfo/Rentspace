@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="com.rentspace.pro.mapper.reviewMapper">
+
+<select id="selectreview" resultType="com.rentspace.pro.domain.reviewVO">
+
+
+SELECT *FROM review 
+		WHERE review_no > 0
+
+
+
+
+</select>
+
+
+<insert id="insertreview" parameterType="com.rentspace.pro.domain.reviewVO">
+INSERT INTO review (  review_content,
+						review_star,
+						review_register_date,
+						review_member_id,
+						review_product_no,
+						review_no) 
+	  				
+	  				VALUES(#{review_content},
+	  				#{review_star},
+	  				SYSDATE,
+	  				NULL,
+	  				0,
+	  				review_seq.NEXTVAL,
+	  				)
+</insert>
+</mapper>
